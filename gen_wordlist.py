@@ -33,9 +33,9 @@ def cdial_split(s):
             chunks[-1] = chunks[-1] + ' ' + s
         if counter == 0:
             chunks.append(s)
-        if s == 'ʻ':
+        if s.startswith('ʻ'):
             counter = 1
-        if s == 'ʼ':
+        if s.startswith('ʼ'):
             counter = 0
     return(chunks)
 
@@ -47,6 +47,8 @@ for fn in os.listdir('html'):
     f.close()
     texts = texts.split('<number>')
     for text in texts:
+        if '</number>' in text:
+            entry=text.split('</number')[0]
         head = text.split('<br>')[0]
         head = cdial_split(head)
         text = text.split()
@@ -64,7 +66,7 @@ for fn in os.listdir('html'):
             g_ = ''
             for w in re.split(r'[\s|-]',g):
                 #get rid of word in each gloss if not in English
-                if re.sub('[\W|ʻ|ʼ]+','',w) in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('s') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('es') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('ing') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('ing')+'e' in eng_list:
+                if re.sub('[\W|ʻ|ʼ]+','',w) in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('s') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('es') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('ing') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('ing')+'e' in eng_list or re.match('\d+',w):
                     g_ += re.sub('[\W|ʻ|ʼ]+','',w)+' '
                     #glosses_.append(re.sub('[\W|ʻ|ʼ]+','',w))
             glosses_.append(g_.strip())
@@ -77,11 +79,11 @@ for fn in os.listdir('html'):
         if counter >= 0:
             if etym != '':# and etym[0] != '*':
                 for r in reflexes:
-                    forms.append(tuple([r[0],re.sub(r"\<[^\>]*\>|\d|\(|\)|\_|\/|\,|\;|\:|\.|\?|\]|\-|\\",'',r[1]).lower(),etym.strip('*').strip(',').strip(':').strip(';').lower(),', '.join(glosses_)]))
+                    forms.append(tuple([r[0],re.sub(r"\<[^\>]*\>|\(|\)|\_|\/|\,|\;|\:|\.|\?|\]|\-|\\",'',r[1]).lower(),etym.strip('*').strip(',').strip(':').strip(';').lower(),', '.join(glosses_),entry,fn]))
 
 
 
-f = open('cdial_wordlist.csv','w')
+f = open('cdial_wordlist.tsv','w')
 for l in sorted(set(forms)):
     print('\t'.join(l),file=f)
 

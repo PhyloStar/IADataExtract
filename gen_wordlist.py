@@ -70,13 +70,7 @@ for fn in os.listdir('html'):
         for g in glosses:
             g_ = ''
             for w in re.split(r'[\s|-]',g):
-                #get rid of word in each gloss if not in English
-                w_ = w
-                clean_= re.sub('[\W|ʻ|ʼ]+','',w_)
-                if clean_ in eng_list or clean_.strip('s') in eng_list or clean_.strip('es') in eng_list or clean_.strip('ing') in eng_list or clean_.strip('est') in eng_list or clean_.strip('d') in eng_list or clean_.strip('ing')+'e' in eng_list or re.match('\d+',w):
-                   g_ += re.sub('[\W|ʻ|ʼ|,|-]+','',w)+' '
-                    # g_ += w + ' '
-                    #glosses_.append(re.sub('[\W|ʻ|ʼ]+','',w))
+                g_ += w + ' '
             glosses_.append(re.sub('[ʻ|ʼ]+','',g_).strip())
         glosses_ = [g for g in glosses_ if g != '']
         for l in range(len(text)-1):

@@ -30,12 +30,17 @@ def cdial_split(s):
     counter = 0
     for s in ss:
         if counter == 1:
-            chunks[-1] = chunks[-1] + ' ' + s
+            if 'ʻ' in s:
+                chunks[-1] = chunks[-1] + ' ʻ'
+            elif 'ʼ' in s:
+                chunks[-1] = chunks[-1] + ' ʼ'
+            else:
+                chunks[-1] = chunks[-1] + ' ' + s
         if counter == 0:
             chunks.append(s)
-        if s.startswith('ʻ'):
+        if 'ʻ' in s:
             counter = 1
-        if s.startswith('ʼ'):
+        if 'ʼ' in s:
             counter = 0
     return(chunks)
 
@@ -66,10 +71,13 @@ for fn in os.listdir('html'):
             g_ = ''
             for w in re.split(r'[\s|-]',g):
                 #get rid of word in each gloss if not in English
-                if re.sub('[\W|ʻ|ʼ]+','',w) in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('s') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('es') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('ing') in eng_list or re.sub('[\W|ʻ|ʼ]+','',w).strip('ing')+'e' in eng_list or re.match('\d+',w):
-                    g_ += re.sub('[\W|ʻ|ʼ]+','',w)+' '
+                w_ = w
+                clean_= re.sub('[\W|ʻ|ʼ]+','',w_)
+                if clean_ in eng_list or clean_.strip('s') in eng_list or clean_.strip('es') in eng_list or clean_.strip('ing') in eng_list or clean_.strip('est') in eng_list or clean_.strip('d') in eng_list or clean_.strip('ing')+'e' in eng_list or re.match('\d+',w):
+                   g_ += re.sub('[\W|ʻ|ʼ|,|-]+','',w)+' '
+                    # g_ += w + ' '
                     #glosses_.append(re.sub('[\W|ʻ|ʼ]+','',w))
-            glosses_.append(g_.strip())
+            glosses_.append(re.sub('[ʻ|ʼ]+','',g_).strip())
         glosses_ = [g for g in glosses_ if g != '']
         for l in range(len(text)-1):
             if text[l].endswith('.') and text[l].split('.')[-2]+'.' in langs.keys() and text[l+1].startswith('<i>'):
@@ -79,7 +87,9 @@ for fn in os.listdir('html'):
         if counter >= 0:
             if etym != '':# and etym[0] != '*':
                 for r in reflexes:
-                    forms.append(tuple([r[0],re.sub(r"\<[^\>]*\>|\(|\)|\_|\/|\,|\;|\:|\.|\?|\]|\-|\\",'',r[1]).lower(),etym.strip('*').strip(',').strip(':').strip(';').lower(),', '.join(glosses_),entry,fn]))
+                    meaning = ', '.join(glosses_)
+                    meaning = re.sub('\*','',meaning)
+                    forms.append(tuple([r[0],re.sub(r"\<[^\>]*\>|\(|\)|\_|\/|\,|\;|\:|\.|\?|\]|\-|\\",'',r[1]).lower(),etym.strip('*').strip(':').strip(';').lower(),meaning,entry,fn]))
 
 
 

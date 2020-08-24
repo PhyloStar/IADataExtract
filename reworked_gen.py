@@ -13,8 +13,8 @@ eng_list = set(eng_list + [ten+'-'+digit for ten in ['twenty','thirty','forty','
 #inflected forms not included
 dname='solo'
 outfn='subset.tsv'
-# dname='html'
-# outfn='all.tsv'
+dname='html'
+outfn='all.tsv'
 
 langs = {}
 
@@ -28,7 +28,7 @@ for l in open('lang_key.csv','r'):
         langs[line[0]] = line[3]
 
 def process_suppl_meanings(s):
-    sm=[]
+
     supplMeanings = re.split(r'Addenda:',s)[0]
     supplMeanings = re.split(r';',supplMeanings)
     supplMeanings = [s.strip() for s in supplMeanings if s != '']
@@ -43,19 +43,22 @@ def process_suppl_meanings(s):
             for l in range(len(frags)):
                 sp2 = frags[l]
                 if sp2[0:sp2.find('.')]+'.' in langs.keys():
-                    currLang = sp2[0:sp2.find(' ')]
+                    currLang = langs[sp2[0:sp2.find('.')]+'.']
                 if re.match(r'[a-z]\.',sp2):
                     currForm = re.search(r'([a-z]\.)', sp2).group(1)
                 if '<i>' in sp2 and currWord == '':
                     currWord = re.split('.*<i>(.*)</i>.*',sp2)[1]
-                if 'ʻ' in sp2 and 'ʼ' in sp2:
+                if 'ʻ' in sp2 and 'ʼ' in sp2 and currWord != '':
                     currMeaning = re.search(currWord+'[^ʻ]+ʻ ([^ʼ]+) ʼ',sp2).group(1)
                 else:
                     if l<len(frags)-1 and 'ʻ' in sp1 and 'ʼ' in sp1:
-                        if re.search(currWord+'[^ʻ]+ʻ ([^ʼ]+) ʼ',sp1) != None:
-                            currMeaning = re.search(currLang+'.+'+currWord+'[^ʻ]+ʻ ([^ʼ]+) ʼ',sp1).group(1)
+                        try:
+                            if re.search(currWord+'[^ʻ]+ʻ ([^ʼ]+) ʼ',sp1) != None:
+                                currMeaning = re.search(currLang+'.+'+currWord+'[^ʻ]+ʻ ([^ʼ]+) ʼ',sp1).group(1)
+                        except Exception:
+                            pass
                 if currWord != '' and currLang != '':
-                    sm.append(tuple([currLang,currWord,currForm,currMeaning]))
+                    finalMeanings.append(tuple([currLang,currWord,currForm,currMeaning,mainWord,mainMeaning,entry,fn]))
                     currWord = ''
                     currMeaning = ''
                     currForm = ''
@@ -67,20 +70,25 @@ def process_suppl_meanings(s):
 
             for l in range(len(frags)):
                 sp2 = frags[l]
+                if sp2 == '--':
+                    break
 
                 if sp2 in langs.keys():
-                    currLang = sp2
+                    currLang = langs[sp2]
                 if sp2[0:sp2.find('.')]+'.' in langs.keys() and currLang == '':
-                    currLang = sp2[0:sp2.find(' ')]
+                    currLang = langs[sp2[0:sp2.find('.')]+'.']
                 if re.match(r'[a-z]\.',sp2):
                     currForm = sp2
                 if '<i>' in sp2 and currWord == '':
                     currWord = re.split('.*<i>(.*)</i>.*',sp2)[1]
                 if 'ʻ' in sp2 and '<i' not in sp2:
-                    currMeaning = re.search(currWord+'[^ʻ]+ʻ (' + frags[l+1] + '[^ʼ]*) ʼ',sp1).group(1)
+                    try:
+                        currMeaning = re.search(currWord+'[^ʻ]+ʻ (' + frags[l+1] + '[^ʼ]*) ʼ',sp1).group(1)
+                    except Exception:
+                        pass
                     # currMeaning = currMeaning[2:][:-2]
                     if currWord != '' and currLang != '':
-                        sm.append(tuple([currLang,currWord,currForm,currMeaning]))
+                        finalMeanings.append(tuple([currLang,currWord,currForm,currMeaning,mainWord,mainMeaning,entry,fn]))
                         currWord = ''
                         currMeaning = ''
                         currForm = ''
@@ -115,9 +123,17 @@ def cdial_split(s):
 
 forms = []
 
+supplMeanings=[]
+finalMeanings=[]
+finalMeanings.append(tuple(["Lang","Word","Word Form","Supp Meaning","Main Word","Main Meaning","Entry","File"]))
 
+fnCount=0
 htmlFiles=[f for f in os.listdir(dname) if re.match(r'.*\.html$', f)]
 for fn in htmlFiles:
+    
+    mainMeaning=''
+    fnCount+=1
+    print(fnCount,': Processing ' + dname+'/'+fn)
     f = open(dname+'/'+fn,'r')
     texts=f.read()
     f.close()
@@ -130,14 +146,24 @@ for fn in htmlFiles:
             text = re.sub('  ',' ',text)
             # Delete any text within parens
             text = re.sub('<br>','',re.sub('&.t;','',re.sub('\([^\)]+\)','',text)))
-            firstMeaning = re.split(r'(\d+)<\/number> <b>([^ ]+)<\/b> ([^ʼ|^ʻ]+\.) ʻ ([^ʼ]+) ʼ',text)
+            firstMeaning = re.split(r'(\d+)<\/number>[^<]+<b>([^ ]+)<\/b> ([^ʼ|^ʻ]+\.) ʻ ([^ʼ]+) ʼ',text)
             if len(firstMeaning)==6:
-                supplMeanings = process_suppl_meanings(firstMeaning[5])
+                try:
+                    mainWord=firstMeaning[2]
+                    mainMeaning=firstMeaning[4]
+                    process_suppl_meanings(firstMeaning[5])
+                except Exception:
+                    pass
             else:
-                firstMeaning = re.split(r'(\d+)<\/number> <b>([^ ]+)<\/b> ʻ ([^ʼ]+) ʼ',text)
-                supplMeanings = process_suppl_meanings(firstMeaning[4])
+                firstMeaning = re.split(r'(\d+)<\/number>[^<]+<b>([^ ]+)<\/b>[^ʻ]+ʻ ([^ʼ]+) ʼ',text)
+                try:
+                    mainWord=firstMeaning[2]
+                    mainMeaning=firstMeaning[3]
+                    process_suppl_meanings(firstMeaning[4])
+                except Exception:
+                    pass
 
-
+'''
         head = text.split('<br>')[0]
         head = cdial_split(head)
         text = text.split()
@@ -176,12 +202,12 @@ for fn in htmlFiles:
                     meaning = re.sub('\*','',meaning)
                     # meaning = meaning+'|'+strSM
                     # forms.append(tuple([r[0],re.sub(r"\<[^\>]*\>|\(|\)|\_|\/|\,|\;|\:|\.|\?|\]|\-|\\",'',r[1]).lower(),etym.strip('*').strip(':').strip(';').lower(),meaning+'|'+str(supplMeanings),entry,fn]))
-                    forms.append(tuple([r[0],re.sub(r"\<[^\>]*\>|\(|\)|\_|\/|\,|\;|\:|\.|\?|\]|\-|\\",'',r[1]).lower(),etym.strip('*').strip(':').strip(';').lower(),firstMeaning[4]+'|'+str(supplMeanings),entry,fn]))
-
+                    forms.append(tuple([r[0],re.sub(r"\<[^\>]*\>|\(|\)|\_|\/|\,|\;|\:|\.|\?|\]|\-|\\",'',r[1]).lower(),etym.strip('*').strip(':').strip(';').lower(),mainMeaning+'|'+str(finalMeanings),entry,fn]))
+'''
 
 
 f = open(outfn,'w')
-for l in sorted(set(forms)):
+for l in sorted(set(finalMeanings)):
     print('\t'.join(l),file=f)
 
 

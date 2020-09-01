@@ -13,8 +13,8 @@ eng_list = set(eng_list + [ten+'-'+digit for ten in ['twenty','thirty','forty','
 #inflected forms not included
 dname='solo'
 outfn='subset.tsv'
-dname='html'
-outfn='all.tsv'
+# dname='html'
+# outfn='all.tsv'
 
 langs = {}
 
@@ -30,10 +30,12 @@ for l in open('lang_key.csv','r'):
 def process_suppl_meanings(s):
 
     supplMeanings = re.split(r'Addenda:',s)[0]
+    supplMeanings = re.sub('\*','',supplMeanings)
     supplMeanings = re.split(r';',supplMeanings)
     supplMeanings = [s.strip() for s in supplMeanings if s != '']
     for sp1 in supplMeanings:
         currLang=''
+        currMeaning=''
         if 'ʼ,' in sp1:
             frags = sp1.split(", ")
             frags = [f.strip() for f in frags if f != '']
@@ -49,7 +51,10 @@ def process_suppl_meanings(s):
                 if '<i>' in sp2 and currWord == '':
                     currWord = re.split('.*<i>(.*)</i>.*',sp2)[1]
                 if 'ʻ' in sp2 and 'ʼ' in sp2 and currWord != '':
-                    currMeaning = re.search(currWord+'[^ʻ]+ʻ ([^ʼ]+) ʼ',sp2).group(1)
+                    try:
+                        currMeaning = re.search(currWord+'[^ʻ]+ʻ ([^ʼ]+) ʼ',sp2).group(1)
+                    except Exception:
+                        pass
                 else:
                     if l<len(frags)-1 and 'ʻ' in sp1 and 'ʼ' in sp1:
                         try:
@@ -133,7 +138,7 @@ for fn in htmlFiles:
     
     mainMeaning=''
     fnCount+=1
-    print(fnCount,': Processing ' + dname+'/'+fn)
+    # print(fnCount,': Processing ' + dname+'/'+fn)
     f = open(dname+'/'+fn,'r')
     texts=f.read()
     f.close()

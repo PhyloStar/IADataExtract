@@ -2,19 +2,14 @@
 # -*- encoding: utf-8 -*-
 
 import codecs
-from bs4 import BeautifulSoup
 import re
 from collections import defaultdict
 import os
-from nltk.corpus import words
 
-eng_list = list(set([l.lower() for l in words.words()]))
-eng_list = set(eng_list + [ten+'-'+digit for ten in ['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'] for digit in ['one','two','three','four','five','six','seven','eight','nine']])
-#inflected forms not included
 dname='solo'
 outfn='subset.tsv'
-# dname='html'
-# outfn='all.tsv'
+dname='html'
+outfn='all.tsv'
 
 langs = {}
 
@@ -75,11 +70,11 @@ def process_suppl_meanings(s):
 
             for l in range(len(frags)):
                 sp2 = frags[l]
-                if sp2 == '--':
-                    break
+                # if sp2 == '--':
+                #     break
 
-                if sp2 in langs.keys():
-                    currLang = langs[sp2]
+                if re.sub(r',','',sp2) in langs.keys():
+                    currLang = langs[re.sub(r',','',sp2)]
                 if sp2[0:sp2.find('.')]+'.' in langs.keys() and currLang == '':
                     currLang = langs[sp2[0:sp2.find('.')]+'.']
                 if re.match(r'[a-z]\.',sp2):
@@ -92,11 +87,13 @@ def process_suppl_meanings(s):
                     except Exception:
                         pass
                     # currMeaning = currMeaning[2:][:-2]
-                    if currWord != '' and currLang != '':
-                        finalMeanings.append(tuple([currLang,currWord,currForm,currMeaning,mainWord,mainMeaning,entry,fn]))
-                        currWord = ''
-                        currMeaning = ''
-                        currForm = ''
+                    if currWord != '':
+                        if currLang != '':
+                            finalMeanings.append(tuple([currLang,currWord,currForm,currMeaning,mainWord,mainMeaning,entry,fn]))
+                        else:
+                            currWord = ''
+                            currMeaning = ''
+                            currForm = ''
 
         
 
